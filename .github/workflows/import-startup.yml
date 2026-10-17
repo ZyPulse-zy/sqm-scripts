@@ -14,9 +14,9 @@ jobs:
       - name: Import exact signed commit
         run: |
           base64 -d .bootstrap/startup.bundle.b64 > /tmp/startup.bundle
-          echo '444ee963f5d02ade0e59b3124269c140020d9a025efa36d64e29f56d6c4dc4bb  /tmp/startup.bundle' | sha256sum -c -
+          echo '156acfe515128918ab53e340ac0d08761b0ac6e673f7e3014ce5ee6221d640f9  /tmp/startup.bundle' | sha256sum -c -
           git fetch /tmp/startup.bundle HEAD:refs/remotes/import/candidate
-          test "$(git rev-parse refs/remotes/import/candidate)" = ca6da0cda92c2cf944353ea53492880095ac3eae
+          test "$(git rev-parse refs/remotes/import/candidate)" = 5eb9982a7a202442bf214a0d2ff947600098d3d3
           git checkout --detach refs/remotes/import/candidate
       - name: Install test dependencies
         run: |
@@ -26,9 +26,9 @@ jobs:
           sudo modprobe dummy
       - name: Run isolated startup regressions
         run: |
-          tests/start-failure.sh
+          sudo env SQM_TEST_PARENT_NETNS="$(readlink /proc/self/ns/net)" SQM_TEST_PARENT_MNTNS="$(readlink /proc/self/ns/mnt)" unshare -mn tests/start-failure.sh --inside
           mkdir -p /tmp/sqm-shell
           ln -s "$(command -v busybox)" /tmp/sqm-shell/ash
-          env SQM_TEST_SHELL=/tmp/sqm-shell/ash tests/start-failure.sh
+          sudo env SQM_TEST_PARENT_NETNS="$(readlink /proc/self/ns/net)" SQM_TEST_PARENT_MNTNS="$(readlink /proc/self/ns/mnt)" SQM_TEST_SHELL=/tmp/sqm-shell/ash unshare -mn tests/start-failure.sh --inside
       - name: Publish exact tested branch
         run: git push --force-with-lease=refs/heads/fix/startup-failure-status:77cf89e82ced9b215cc02f64fd471f5278b7d031 origin HEAD:refs/heads/fix/startup-failure-status
