@@ -26,9 +26,9 @@ jobs:
           sudo modprobe dummy
       - name: Run isolated startup regressions
         run: |
-          sudo tests/start-failure.sh
+          tests/start-failure.sh
           mkdir -p /tmp/sqm-shell
           ln -s "$(command -v busybox)" /tmp/sqm-shell/ash
-          sudo env SQM_TEST_SHELL=/tmp/sqm-shell/ash tests/start-failure.sh
+          env SQM_TEST_SHELL=/tmp/sqm-shell/ash tests/start-failure.sh
       - name: Publish exact tested branch
         run: git push --force-with-lease=refs/heads/fix/startup-failure-status:77cf89e82ced9b215cc02f64fd471f5278b7d031 origin HEAD:refs/heads/fix/startup-failure-status
