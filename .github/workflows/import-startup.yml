@@ -10,7 +10,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 4
+          fetch-depth: 0
       - name: Import exact signed commit
         run: |
           base64 -d .bootstrap/startup.bundle.b64 > /tmp/startup.bundle
