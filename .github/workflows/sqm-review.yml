@@ -1,0 +1,54 @@
+name: Verify SQM optional directions and startup failures
+on:
+  push:
+    branches: [bootstrap/sqm-review-194]
+permissions:
+  contents: read
+jobs:
+  kernel:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: control
+          fetch-depth: 0
+      - name: Verify both source archives and import candidate
+        run: |
+          base64 -d control/ci/review/candidate.bundle.b64 > "$RUNNER_TEMP/candidate.bundle"
+          base64 -d control/ci/review/original.bundle.b64 > "$RUNNER_TEMP/original.bundle"
+          printf '%s  %s\n' 9b777fce706604d769f11f494648faa98f0e1a541d92c04c987f3930c73b2dcb "$RUNNER_TEMP/candidate.bundle" | sha256sum -c -
+          printf '%s  %s\n' 82c4e99c5097cdd1a5faa91c55772290f4619c240121a4b601936ad10947ce18 "$RUNNER_TEMP/original.bundle" | sha256sum -c -
+          git init source
+          git -C source fetch "$RUNNER_TEMP/original.bundle" HEAD:refs/remotes/import/original
+          test "$(git -C source rev-parse refs/remotes/import/original)" = bf6f0e7913374624fa9348f7ab86e58e582f1862
+          git -C source fetch "$RUNNER_TEMP/candidate.bundle" HEAD
+          test "$(git -C source rev-parse FETCH_HEAD)" = b79b4447ca210594895dc4e8e41ed826f909c87b
+          git -C source checkout --detach FETCH_HEAD
+      - name: Install test dependencies
+        run: sudo apt-get update -qq && sudo apt-get install -y --no-install-recommends iproute2 busybox python3
+      - name: Independent compatibility and real CAKE validation
+        run: bash control/ci/review/verify.sh "$PWD/source" "$RUNNER_TEMP/evidence"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: sqm-review-194-evidence
+          path: ${{ runner.temp }}/evidence
+          if-no-files-found: error
+  publish-validated:
+    needs: kernel
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Preserve exact validated source outside the PR branch
+        run: |
+          base64 -d ci/review/candidate.bundle.b64 > "$RUNNER_TEMP/candidate.bundle"
+          printf '%s  %s\n' 9b777fce706604d769f11f494648faa98f0e1a541d92c04c987f3930c73b2dcb "$RUNNER_TEMP/candidate.bundle" | sha256sum -c -
+          git fetch "$RUNNER_TEMP/candidate.bundle" HEAD:refs/remotes/import/candidate
+          test "$(git rev-parse refs/remotes/import/candidate)" = b79b4447ca210594895dc4e8e41ed826f909c87b
+          git push --force-with-lease=refs/heads/validated/sqm-review-194: origin refs/remotes/import/candidate:refs/heads/validated/sqm-review-194
+
