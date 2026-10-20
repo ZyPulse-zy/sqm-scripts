@@ -4,9 +4,10 @@ source_dir=$(realpath "$1")
 evidence_dir=$(realpath -m "$2")
 lab_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 mkdir -p "$evidence_dir"
+python3 "$lab_dir/verify-indent.py" "$source_dir" "$evidence_dir/indentation-proof.json"
 helper="$lab_dir/openwrt-functions.sh"
 echo 'e819c5a6ccc2737233a2e4497745518d55fcde48511fa324a2bed40c7a59db24  '"$helper" | sha256sum -c -
-test "$(git -C "$source_dir" rev-parse HEAD)" = b79b4447ca210594895dc4e8e41ed826f909c87b
+test "$(git -C "$source_dir" rev-parse HEAD)" = 2e581cd032fef269b4964188e58b774739dd8939
 test "$(git -C "$source_dir" rev-parse HEAD^)" = 77cf89e82ced9b215cc02f64fd471f5278b7d031
 test "$(git -C "$source_dir" show -s --format='%an <%ae>')" = 'Yuen Su <zypulsecore@gmail.com>'
 git -C "$source_dir" show -s --format=%B | grep -Fx 'Signed-off-by: Yuen Su <zypulsecore@gmail.com>'
